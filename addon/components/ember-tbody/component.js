@@ -322,4 +322,10 @@ export default Component.extend({
    * the version compatability.
    */
   shouldYieldToInverse: SUPPORTS_INVERSE_BLOCK,
+
+  actions: {
+    lastReached: function(item, index) {
+      this.sendAction('lastReached', item, index);
+    }
+  }
 });
