@@ -875,7 +875,7 @@ export default EmberObject.extend({
 
     this.clientX = clientX;
 
-    console.log('updateResize', delta);
+    console.log('updateResize', Math.abs(delta), delta, clientX, this.scale);
 
     if (Math.abs(delta) < 1) {
       return;
