@@ -1,12 +1,10 @@
 /* global Hammer */
 import BaseTableCell from '../-private/base-table-cell';
-import { next } from '@ember/runloop';
-
-import { readOnly } from '@ember/object/computed';
 import { closest } from '../../-private/utils/element';
-
-import layout from './template';
 import { get } from '@ember/object';
+import layout from './template';
+import { next } from '@ember/runloop';
+import { readOnly } from '@ember/object/computed';
 
 const COLUMN_INACTIVE = 0;
 const COLUMN_RESIZING = 1;
@@ -186,6 +184,7 @@ export default BaseTableCell.extend({
   },
 
   panStartHandler(event) {
+    console.log('panStartHandler', this._columnState);
     let isResizable = this.get('isResizable');
     let isReorderable = this.get('isReorderable');
 
@@ -205,6 +204,8 @@ export default BaseTableCell.extend({
   panMoveHandler(event) {
     let [{ clientX }] = event.pointers;
 
+    console.log('panMoveHandler', this._columnState);
+
     if (this._columnState === COLUMN_RESIZING) {
       this.get('columnMeta').updateResize(clientX);
       this._prevClientX = clientX;
@@ -215,6 +216,7 @@ export default BaseTableCell.extend({
   },
 
   panEndHandler() {
+    console.log('panEndHandler', this._columnState);
     if (this._columnState === COLUMN_RESIZING) {
       this.get('columnMeta').endResize();
     } else if (this._columnState === COLUMN_REORDERING) {

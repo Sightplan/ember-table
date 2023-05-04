@@ -1,21 +1,19 @@
+import { DropIndicator, MainIndicator } from './utils/reorder-indicators';
 /* eslint-disable getter-return */
 import EmberObject, { get, set } from '@ember/object';
+import { Token, scheduler } from 'ember-raf-scheduler';
 import { addObserver, removeObserver } from '@ember/object/observers';
-import { A as emberA } from '@ember/array';
-import { DEBUG } from '@glimmer/env';
-
-import { computed } from '@ember/object';
+import { getInnerClientRect, getOuterClientRect, getScale } from './utils/element';
 import { gt, readOnly } from '@ember/object/computed';
+import { move, objectAt, splice } from './utils/array';
 
-import { scheduler, Token } from 'ember-raf-scheduler';
-
-import { getOrCreate } from './meta-cache';
-import { objectAt, move, splice } from './utils/array';
-import { mergeSort } from './utils/sort';
-import { getScale, getOuterClientRect, getInnerClientRect } from './utils/element';
-import { MainIndicator, DropIndicator } from './utils/reorder-indicators';
-import { notifyPropertyChange } from './utils/ember';
+import { DEBUG } from '@glimmer/env';
 import { assert } from '@ember/debug';
+import { computed } from '@ember/object';
+import { A as emberA } from '@ember/array';
+import { getOrCreate } from './meta-cache';
+import { mergeSort } from './utils/sort';
+import { notifyPropertyChange } from './utils/ember';
 
 const SCROLL_THRESHOLD = 50;
 
@@ -864,6 +862,7 @@ export default EmberObject.extend({
   },
 
   startResize(node, clientX) {
+    console.log('startResize', clientX);
     this.clientX = clientX;
   },
 
@@ -875,6 +874,8 @@ export default EmberObject.extend({
     );
 
     this.clientX = clientX;
+
+    console.log('updateResize', delta);
 
     if (Math.abs(delta) < 1) {
       return;
@@ -921,6 +922,8 @@ export default EmberObject.extend({
     }
 
     let newWidth = oldWidth + delta;
+    
+    console.log('_updateResize', delta, newWidth);
 
     set(node, 'width', newWidth);
 
@@ -928,6 +931,7 @@ export default EmberObject.extend({
   },
 
   endResize(node) {
+    console.log('endResize');
     if (this._nextUpdateScroll) {
       this._nextUpdateScroll.cancel();
       this._nextUpdateScroll = null;
