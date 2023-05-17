@@ -1,21 +1,19 @@
+import { DropIndicator, MainIndicator } from './utils/reorder-indicators';
 /* eslint-disable getter-return */
 import EmberObject, { get, set } from '@ember/object';
+import { Token, scheduler } from 'ember-raf-scheduler';
 import { addObserver, removeObserver } from '@ember/object/observers';
-import { A as emberA } from '@ember/array';
-import { DEBUG } from '@glimmer/env';
-
-import { computed } from '@ember/object';
+import { getInnerClientRect, getOuterClientRect, getScale } from './utils/element';
 import { gt, readOnly } from '@ember/object/computed';
+import { move, objectAt, splice } from './utils/array';
 
-import { scheduler, Token } from 'ember-raf-scheduler';
-
-import { getOrCreate } from './meta-cache';
-import { objectAt, move, splice } from './utils/array';
-import { mergeSort } from './utils/sort';
-import { getScale, getOuterClientRect, getInnerClientRect } from './utils/element';
-import { MainIndicator, DropIndicator } from './utils/reorder-indicators';
-import { notifyPropertyChange } from './utils/ember';
+import { DEBUG } from '@glimmer/env';
 import { assert } from '@ember/debug';
+import { computed } from '@ember/object';
+import { A as emberA } from '@ember/array';
+import { getOrCreate } from './meta-cache';
+import { mergeSort } from './utils/sort';
+import { notifyPropertyChange } from './utils/ember';
 
 const SCROLL_THRESHOLD = 50;
 
@@ -79,6 +77,8 @@ const TableColumnMeta = EmberObject.extend({
   isResizable: readOnly('_node.isResizable'),
 
   isReorderable: readOnly('_node.isReorderable'),
+
+  isResizing: readOnly('_node.isResizing'),
 
   width: readOnly('_node.width'),
 
@@ -146,6 +146,8 @@ const TableColumnMeta = EmberObject.extend({
 */
 const ColumnTreeNode = EmberObject.extend({
   _subcolumnNodes: null,
+
+  isResizing: false,
 
   init() {
     this._super(...arguments);
@@ -307,6 +309,20 @@ const ColumnTreeNode = EmberObject.extend({
 
     return get(this, 'subcolumnNodes').reduce((sum, subcolumn) => {
       let subcolumnMinWidth = get(subcolumn, 'minWidth');
+
+      return sum + subcolumnMinWidth;
+    }, 0);
+  }),
+
+  resizeMinWidth: computed('column.resizeMinWidth', function() {
+    if (get(this, 'isLeaf')) {
+      let columnMinWidth = get(this, 'column.resizeMinWidth');
+
+      return typeof columnMinWidth === 'number' ? columnMinWidth : DEFAULT_MIN_WIDTH;
+    }
+
+    return get(this, 'subcolumnNodes').reduce((sum, subcolumn) => {
+      let subcolumnMinWidth = get(subcolumn, 'resizeMinWidth');
 
       return sum + subcolumnMinWidth;
     }, 0);
@@ -865,6 +881,8 @@ export default EmberObject.extend({
 
   startResize(node, clientX) {
     this.clientX = clientX;
+    get(node, 'tree').set('spColumnResizing', true);
+    set(node, 'isResizing', true);
   },
 
   updateResize(node, clientX) {
@@ -882,6 +900,7 @@ export default EmberObject.extend({
 
     // Add the class after at least one update has occured
     this.container.classList.add('is-resizing');
+    set(node, 'isResizing', true);
 
     this._updateResize(node, delta);
   },
@@ -891,6 +910,7 @@ export default EmberObject.extend({
 
     let oldWidth = get(node, 'width');
     let minWidth = get(node, 'minWidth');
+    if (get(node, 'resizeMinWidth')) minWidth = get(node, 'resizeMinWidth');
 
     delta = Math.max(oldWidth + delta, minWidth) - oldWidth;
 
@@ -911,6 +931,7 @@ export default EmberObject.extend({
       if (sibling) {
         let siblingOldWidth = get(sibling, 'width');
         let siblingMinWidth = get(sibling, 'minWidth');
+        if (get(sibling, 'resizeMinWidth')) siblingMinWidth = get(sibling, 'resizeMinWidth');
 
         delta = -(Math.max(siblingOldWidth - delta, siblingMinWidth) - siblingOldWidth);
 
@@ -921,8 +942,15 @@ export default EmberObject.extend({
     }
 
     let newWidth = oldWidth + delta;
-
+    
+    set(node, 'isResizing', true);
     set(node, 'width', newWidth);
+
+    const rawMinWidth = get(node, 'minWidth');
+    if (rawMinWidth > minWidth && newWidth < rawMinWidth) {
+      const column = get(node, 'column');
+      set(column, 'minWidth', newWidth);
+    }
 
     this.ensureWidthConstraint.call(this);
   },
@@ -934,6 +962,8 @@ export default EmberObject.extend({
     }
 
     this.container.classList.remove('is-resizing');
+    get(node, 'tree').set('spColumnResizing', false);
+    set(node, 'isResizing', false);
 
     this.sendAction('onResize', get(node, 'column'));
   },
