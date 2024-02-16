@@ -370,4 +370,10 @@ export default Component.extend({
    * the version compatability.
    */
   shouldYieldToInverse: SUPPORTS_INVERSE_BLOCK,
+
+  actions: {
+    lastReached(item, index) {
+      if (this.lastReached) this.lastReached(item, index);
+    }
+  }
 });
