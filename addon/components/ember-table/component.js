@@ -32,20 +32,20 @@ import layout from './template';
 export default Component.extend({
   layout,
   classNames: ['ember-table'],
-
+  maxStickyProportion: null,
   'data-test-ember-table': true,
 
   didInsertElement() {
     this._super(...arguments);
-
     let thead = this.element.querySelector('thead');
     let tfoot = this.element.querySelector('tfoot');
+    let maxStickyProportion = this.get('maxStickyProportion');
 
     if (thead) {
-      setupTableStickyPolyfill(thead);
+      setupTableStickyPolyfill(thead, maxStickyProportion);
     }
     if (tfoot) {
-      setupTableStickyPolyfill(tfoot);
+      setupTableStickyPolyfill(tfoot, maxStickyProportion);
     }
   },
 
